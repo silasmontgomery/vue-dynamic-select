@@ -1,2 +1,2 @@
 # vue-dynamic-select
-A VueJS plugin that provides a searchable and reactive select list component.
+A VueJS plugin that provides a searchable and reactive select list component with no dependencies.
