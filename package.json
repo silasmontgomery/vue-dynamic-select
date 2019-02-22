@@ -1,0 +1,49 @@
+{
+  "name": "vue-dynamic-select",
+  "version": "1.0.0",
+  "description": "A VueJS plugin that provides a searchable and reactive select list component.",
+  "main": "dist/vue-dynamic-select.umd.js",
+  "module": "dist/vue-dynamic-select.esm.js",
+  "unpkg": "dist/vue-dynamic-select.min.js",
+  "browser": {
+    "./sfc": "src/vue-dynamic-select.vue"
+  },
+  "scripts": {
+    "build": "npm run build:umd & npm run build:es & npm run build:unpkg",
+    "build:umd": "rollup --config build/rollup.config.js --format umd --file dist/vue-dynamic-select.umd.js",
+    "build:es": "rollup --config build/rollup.config.js --format es --file dist/vue-dynamic-select.esm.js",
+    "build:unpkg": "rollup --config build/rollup.config.js --format iife --file dist/vue-dynamic-select.min.js"
+  },
+  "devDependencies": {
+    "rollup": "^0.57.1",
+    "rollup-plugin-buble": "^0.19.2",
+    "rollup-plugin-vue": "^3.0.0",
+    "vue": "^2.5.7",
+    "vue-template-compiler": "^2.5.21"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/silasmontgomery/vue-dynamic-select.git"
+  },
+  "keywords": [
+    "vue",
+    "js",
+    "vuejs",
+    "javascript",
+    "component",
+    "select",
+    "list",
+    "ajax",
+    "reactive",
+    "search",
+    "searchable",
+    "plugin",
+    "dynamic"
+  ],
+  "author": "Silas Montgomery",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/silasmontgomery/vue-dynamic-select/issues"
+  },
+  "homepage": "https://github.com/silasmontgomery/vue-dynamic-select#readme"
+}
