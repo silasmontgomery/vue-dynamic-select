@@ -155,7 +155,6 @@
     .vue-dynamic-select {
         border: 1px solid #ced4da; 
         position: relative;
-        width: 100%; 
         padding: .375em .5em;
         border-radius: .25em;
         cursor: text;
