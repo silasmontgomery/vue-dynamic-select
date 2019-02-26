@@ -48,9 +48,8 @@ var script = {
     data: function() {
         return {
             hasFocus: false,
-            typing: false,
             search: null,
-            savedOption: null,
+            selectedOption: null,
             selectedResult: 0
         };
     },
@@ -61,10 +60,15 @@ var script = {
         if(this.value) {
             this.options.forEach(function (option) {
                 if(option[this$1.optionValue] == this$1.value[this$1.optionValue]) {
-                    this$1.savedOption = option;
+                    this$1.selectedOption = option;
                 }
             });
         }
+        // Add onclick method to body to hide result list when component loses focus
+        window.addEventListener("click", this.loseFocus);
+    },
+    destroyed: function destroyed() {
+        window.removeEventListener("click", this.loseFocus);
     },
     computed: {
         results: function() {
@@ -77,20 +81,25 @@ var script = {
             return this.hasFocus && this.results.length > 0;
         },
         showPlaceholder: function() {
-            return !this.hasFocus && !this.savedOption;
+            return !this.hasFocus && !this.selectedOption;
         }
     },
     watch: {
-        hasFocus: function() {
+        hasFocus: function(hasFocus) {
             // Clear the search box when component loses focus
-            if(!this.hasFocus) {
-                this.typing = false;
+            window.removeEventListener("keydown", this.stopScroll);
+            if(hasFocus) {
+                window.addEventListener("keydown", this.stopScroll);
+                this.$refs.search.focus();
+            } else {
                 this.search = null;
+                this.selectedResult = 0;
+                this.$refs.search.blur();
             }
         },
-        savedOption: function() {
-            // Provide selected items array to parent
-            this.$emit('input', this.savedOption);
+        selectedOption: function() {
+            // Provide selected item to parent
+            this.$emit('input', this.selectedOption);
         },
         search: function() {
             // Provide search text to parent (for ajax fetching, etc)
@@ -99,16 +108,14 @@ var script = {
     },
     methods: {
         selectOption: function(option) {
-            this.savedOption = option;
-            this.search = null;
-            this.$refs.search.blur();
+            this.selectedOption = option;
             this.hasFocus = false;
         },
         removeOption: function(event) {
             // Remove selected option if user hits backspace on empty search field
             if(event.keyCode === 8 && (this.search == null || this.search == '')) {
-                this.savedOption = null;
-                this.$refs.search.blur();
+                this.selectedOption = null;
+                this.hasFocus = false;
             }
         },
         moveToResults: function(event) {
@@ -150,6 +157,16 @@ var script = {
             }
 
             return value;
+        },
+        stopScroll: function(event) {
+            if(event.keyCode === 40 || event.keyCode === 38) {
+                event.preventDefault();
+            }
+        },
+        loseFocus: function(event) {
+            if(!event.target.classList.contains('vue-dynamic-select')) {
+                this.hasFocus = false;
+            }
         }
     }
 }
@@ -302,15 +319,10 @@ var __vue_render__ = function() {
       "div",
       {
         staticClass: "vue-dynamic-select",
+        attrs: { tabindex: "0" },
         on: {
           focusin: function($event) {
             _vm.hasFocus = true;
-          },
-          focusout: function($event) {
-            _vm.hasFocus = false;
-          },
-          click: function($event) {
-            return _vm.$refs.search.focus()
           }
         }
       },
@@ -322,10 +334,12 @@ var __vue_render__ = function() {
             })
           : _vm._e(),
         _vm._v(" "),
-        _vm.savedOption && !_vm.typing
+        _vm.selectedOption && !_vm.hasFocus
           ? _c("div", {
-              staticClass: "saved-option",
-              domProps: { textContent: _vm._s(_vm.savedOption[_vm.optionText]) }
+              staticClass: "selected-option",
+              domProps: {
+                textContent: _vm._s(_vm.selectedOption[_vm.optionText])
+              }
             })
           : _vm._e(),
         _vm._v(" "),
@@ -344,10 +358,7 @@ var __vue_render__ = function() {
           domProps: { value: _vm.search },
           on: {
             focus: function($event) {
-              _vm.typing = true;
-            },
-            blur: function($event) {
-              _vm.typing = false;
+              _vm.hasFocus = true;
             },
             keyup: _vm.moveToResults,
             keydown: _vm.removeOption,
@@ -377,17 +388,11 @@ var __vue_render__ = function() {
                     innerHTML: _vm._s(_vm.highlight(result[_vm.optionText]))
                   },
                   on: {
-                    focus: function($event) {
-                      _vm.typing = true;
-                    },
-                    blur: function($event) {
-                      _vm.typing = false;
-                    },
                     click: function($event) {
-                      $event.stopPropagation();
                       return _vm.selectOption(result)
                     },
                     keyup: function($event) {
+                      $event.preventDefault();
                       return _vm.navigateResults(result, $event)
                     }
                   }
@@ -406,11 +411,11 @@ __vue_render__._withStripped = true;
   /* style */
   var __vue_inject_styles__ = function (inject) {
     if (!inject) { return }
-    inject("data-v-7db6c076_0", { source: "\n.vue-dynamic-select[data-v-7db6c076] {\n    border: 1px solid #ced4da; \n    position: relative;\n    padding: .375em .5em;\n    border-radius: .25em;\n    cursor: text;\n    display: block;\n}\n.vue-dynamic-select i.dropdown[data-v-7db6c076] {\n    width: 0; \n    height: 0; \n    border-left: 4px solid transparent; \n    border-right: 4px solid transparent; \n    border-top: 4px solid; \n    float: right; \n    top: .75em; \n    opacity: .8; \n    cursor: pointer;\n}\n.vue-dynamic-select .placeholder[data-v-7db6c076] {\n    display: inline-block;\n    color: #ccc;\n}\n.vue-dynamic-select .result-list[data-v-7db6c076] {\n    border: 1px solid #ced4da; \n    margin: calc(.375em - 1px) calc(-.5em - 1px);\n    width: calc(100% + 2px);\n    min-width: calc(100% + 2px);\n    border-radius: 0 0 .25em .25em;\n    cursor: pointer;\n    position: absolute;\n    z-index: 10;\n    background-color: #fff;\n}\n.vue-dynamic-select .result-list .result[data-v-7db6c076] {\n    padding: .375em .75em;\n    color: #333;\n}\n.vue-dynamic-select .result-list .result[data-v-7db6c076]:hover, .vue-dynamic-select .result-list .result[data-v-7db6c076]:focus {\n    background-color: #efefef;\n    outline: none;\n}\n.vue-dynamic-select .saved-option[data-v-7db6c076] {\n    display: inline-block;\n}\n.vue-dynamic-select .search[data-v-7db6c076] {\n    border: none;\n    width: 50px;\n}\n.vue-dynamic-select .search[data-v-7db6c076]:focus {\n    outline: none;\n}\n", map: {"version":3,"sources":["/home/smontgomery/Projects/vue-dynamic-select/src/DynamicSelect.vue"],"names":[],"mappings":";AA0JA;IACA,yBAAA;IACA,kBAAA;IACA,oBAAA;IACA,oBAAA;IACA,YAAA;IACA,cAAA;AACA;AACA;IACA,QAAA;IACA,SAAA;IACA,kCAAA;IACA,mCAAA;IACA,qBAAA;IACA,YAAA;IACA,UAAA;IACA,WAAA;IACA,eAAA;AACA;AACA;IACA,qBAAA;IACA,WAAA;AACA;AACA;IACA,yBAAA;IACA,4CAAA;IACA,uBAAA;IACA,2BAAA;IACA,8BAAA;IACA,eAAA;IACA,kBAAA;IACA,WAAA;IACA,sBAAA;AACA;AACA;IACA,qBAAA;IACA,WAAA;AACA;AACA;IACA,yBAAA;IACA,aAAA;AACA;AACA;IACA,qBAAA;AACA;AACA;IACA,YAAA;IACA,WAAA;AACA;AACA;IACA,aAAA;AACA","file":"DynamicSelect.vue","sourcesContent":["<template>\n    <div>\n        <div class=\"vue-dynamic-select\" @focusin=\"hasFocus=true\" @focusout=\"hasFocus=false\" @click=\"$refs.search.focus()\">\n            <div v-if=\"showPlaceholder\" class=\"placeholder\" v-text=\"placeholder\" />\n            <div class=\"saved-option\" v-text=\"savedOption[optionText]\" v-if=\"savedOption && !typing\" />\n            <input autocomplete=\"off\" class=\"search\" ref=\"search\" v-model=\"search\" @focus=\"typing=true\" @blur=\"typing=false\" @keyup=\"moveToResults\" @keydown=\"removeOption\" />\n            <i class=\"dropdown\" />\n            <div v-if=\"showResultList\" ref=\"resultList\" class=\"result-list\">\n                <div ref=\"result\" class=\"result\" tabindex=\"0\" @focus=\"typing=true\" @blur=\"typing=false\" v-for=\"result in results\" :key=\"result[optionValue]\" v-html=\"highlight(result[optionText])\" @click.stop=\"selectOption(result)\" @keyup=\"navigateResults(result, $event)\" />\n            </div>\n        </div>\n    </div>\n</template>\n\n<script>\n    export default {\n        props: {\n            placeholder: {\n                type: String, \n                default: 'search',\n                required: false\n            },\n            options: {\n                type: Array, \n                default: function() {\n                    return []\n                },\n                required: true\n            },\n            optionValue: {\n                type: String, \n                default: 'id',\n                required: true\n            },\n            optionText: {\n                type: String, \n                default: 'name',\n                required: true\n            },\n            value: {\n                type: Object,\n                default: function() {\n                    return null\n                },\n                required: false\n            }\n        },\n        data: function() {\n            return {\n                hasFocus: false,\n                typing: false,\n                search: null,\n                savedOption: null,\n                selectedResult: 0\n            };\n        },\n        mounted() {\n            // Load selected option from prop\n            if(this.value) {\n                this.options.forEach(option => {\n                    if(option[this.optionValue] == this.value[this.optionValue]) {\n                        this.savedOption = option;\n                    }\n                })\n            }\n        },\n        computed: {\n            results: function() {\n                // Filter items on search text (if not empty, case insensitive) and when item isn't already selected (else return all items not selected)\n                return this.search ? this.options.filter(i => i[this.optionText].toLowerCase().indexOf(this.search.toLowerCase()) > -1) : this.options;\n            },\n            showResultList: function() {\n                return this.hasFocus && this.results.length > 0;\n            },\n            showPlaceholder: function() {\n                return !this.hasFocus && !this.savedOption;\n            }\n        },\n        watch: {\n            hasFocus: function() {\n                // Clear the search box when component loses focus\n                if(!this.hasFocus) {\n                    this.typing = false;\n                    this.search = null;\n                }\n            },\n            savedOption: function() {\n                // Provide selected items array to parent\n                this.$emit('input', this.savedOption);\n            },\n            search: function() {\n                // Provide search text to parent (for ajax fetching, etc)\n                this.$emit('search', this.search);\n            }\n        },\n        methods: {\n            selectOption: function(option) {\n                this.savedOption = option;\n                this.search = null;\n                this.$refs.search.blur();\n                this.hasFocus = false;\n            },\n            removeOption: function(event) {\n                // Remove selected option if user hits backspace on empty search field\n                if(event.keyCode === 8 && (this.search == null || this.search == '')) {\n                    this.savedOption = null;\n                    this.$refs.search.blur();\n                }\n            },\n            moveToResults: function(event) {\n                // Move down to first result if user presses down arrow (from search field)\n                if(event.keyCode === 40) {\n                    if(this.$refs.result.length > 0) {\n                        this.$refs.resultList.children.item(0).focus();\n                    }\n                }\n            },\n            navigateResults: function(option, event) {\n                // Add option to selected items on enter key\n                if(event.keyCode === 13) {\n                    this.selectOption(option);\n                // Move up or down items in result list with up or down arrow keys\n                } else if(event.keyCode === 40 || event.keyCode === 38) {\n                    if(event.keyCode === 40) {\n                        this.selectedResult++;\n                    } else if(event.keyCode === 38) {\n                        this.selectedResult--;\n                    }\n                    let next = this.$refs.resultList.children.item(this.selectedResult);\n                    if(next) {\n                        next.focus();\n                    } else {\n                        this.selectedResult = 0;\n                        this.$refs.search.focus();\n                    }\n                }\n            },\n            highlight: function(value) {\n                // Highlights the part of each result that matches the search text\n                if(this.search) {\n                    let matchPos = value.toLowerCase().indexOf(this.search.toLowerCase());\n                    if(matchPos > -1) {\n                        let matchStr = value.substr(matchPos, this.search.length);\n                        value = value.replace(matchStr, '<span style=\"font-weight: bold; background-color: #efefef;\">'+matchStr+'</span>');\n                    }\n                }\n\n                return value;\n            }\n        }\n    }\n</script>\n\n<style scoped>\n    .vue-dynamic-select {\n        border: 1px solid #ced4da; \n        position: relative;\n        padding: .375em .5em;\n        border-radius: .25em;\n        cursor: text;\n        display: block;\n    }\n    .vue-dynamic-select i.dropdown {\n        width: 0; \n        height: 0; \n        border-left: 4px solid transparent; \n        border-right: 4px solid transparent; \n        border-top: 4px solid; \n        float: right; \n        top: .75em; \n        opacity: .8; \n        cursor: pointer;\n    }\n    .vue-dynamic-select .placeholder {\n        display: inline-block;\n        color: #ccc;\n    }\n    .vue-dynamic-select .result-list {\n        border: 1px solid #ced4da; \n        margin: calc(.375em - 1px) calc(-.5em - 1px);\n        width: calc(100% + 2px);\n        min-width: calc(100% + 2px);\n        border-radius: 0 0 .25em .25em;\n        cursor: pointer;\n        position: absolute;\n        z-index: 10;\n        background-color: #fff;\n    }\n    .vue-dynamic-select .result-list .result {\n        padding: .375em .75em;\n        color: #333;\n    }\n    .vue-dynamic-select .result-list .result:hover, .vue-dynamic-select .result-list .result:focus {\n        background-color: #efefef;\n        outline: none;\n    }\n    .vue-dynamic-select .saved-option {\n        display: inline-block;\n    }\n    .vue-dynamic-select .search {\n        border: none;\n        width: 50px;\n    }\n    .vue-dynamic-select .search:focus {\n        outline: none;\n    }\n</style>\n"]}, media: undefined });
+    inject("data-v-d8e8a08a_0", { source: "\n.vue-dynamic-select[data-v-d8e8a08a] {\n    border: 1px solid #ced4da; \n    position: relative;\n    padding: .375em .5em;\n    border-radius: .25em;\n    cursor: text;\n    display: block;\n}\n.vue-dynamic-select i.dropdown[data-v-d8e8a08a] {\n    width: 0; \n    height: 0; \n    border-left: 4px solid transparent; \n    border-right: 4px solid transparent; \n    border-top: 4px solid; \n    float: right; \n    top: .75em; \n    opacity: .8; \n    cursor: pointer;\n}\n.vue-dynamic-select .placeholder[data-v-d8e8a08a] {\n    display: inline-block;\n    color: #ccc;\n}\n.vue-dynamic-select .result-list[data-v-d8e8a08a] {\n    border: 1px solid #ced4da; \n    margin: calc(.375em - 1px) calc(-.5em - 1px);\n    width: calc(100% + 2px);\n    min-width: calc(100% + 2px);\n    border-radius: 0 0 .25em .25em;\n    cursor: pointer;\n    position: absolute;\n    z-index: 10;\n    background-color: #fff;\n}\n.vue-dynamic-select .result-list .result[data-v-d8e8a08a] {\n    padding: .375em .75em;\n    color: #333;\n}\n.vue-dynamic-select .result-list .result[data-v-d8e8a08a]:hover, .vue-dynamic-select .result-list .result[data-v-d8e8a08a]:focus {\n    background-color: #efefef;\n    outline: none;\n}\n.vue-dynamic-select .selected-option[data-v-d8e8a08a] {\n    display: inline-block;\n}\n.vue-dynamic-select .search[data-v-d8e8a08a] {\n    border: none;\n    width: 50px;\n}\n.vue-dynamic-select .search[data-v-d8e8a08a]:focus {\n    outline: none;\n}\n", map: {"version":3,"sources":["/home/smontgomery/Projects/vue-dynamic-select/src/DynamicSelect.vue"],"names":[],"mappings":";AA2KA;IACA,yBAAA;IACA,kBAAA;IACA,oBAAA;IACA,oBAAA;IACA,YAAA;IACA,cAAA;AACA;AACA;IACA,QAAA;IACA,SAAA;IACA,kCAAA;IACA,mCAAA;IACA,qBAAA;IACA,YAAA;IACA,UAAA;IACA,WAAA;IACA,eAAA;AACA;AACA;IACA,qBAAA;IACA,WAAA;AACA;AACA;IACA,yBAAA;IACA,4CAAA;IACA,uBAAA;IACA,2BAAA;IACA,8BAAA;IACA,eAAA;IACA,kBAAA;IACA,WAAA;IACA,sBAAA;AACA;AACA;IACA,qBAAA;IACA,WAAA;AACA;AACA;IACA,yBAAA;IACA,aAAA;AACA;AACA;IACA,qBAAA;AACA;AACA;IACA,YAAA;IACA,WAAA;AACA;AACA;IACA,aAAA;AACA","file":"DynamicSelect.vue","sourcesContent":["<template>\n    <div>\n        <div tabindex=\"0\" @focusin=\"hasFocus=true\" class=\"vue-dynamic-select\">\n            <div v-if=\"showPlaceholder\" class=\"placeholder\" v-text=\"placeholder\"></div>\n            <div class=\"selected-option\" v-text=\"selectedOption[optionText]\" v-if=\"selectedOption && !hasFocus\" />\n            <input @focus=\"hasFocus=true\" autocomplete=\"off\" class=\"search\" ref=\"search\" v-model=\"search\" @keyup=\"moveToResults\" @keydown=\"removeOption\" />\n            <i class=\"dropdown\" />\n            <div v-if=\"showResultList\" ref=\"resultList\" class=\"result-list\">\n                <div tabindex=\"0\" ref=\"result\" class=\"result\" v-for=\"result in results\" :key=\"result[optionValue]\" v-html=\"highlight(result[optionText])\" @click=\"selectOption(result)\" @keyup.prevent=\"navigateResults(result, $event)\" />\n            </div>\n        </div>\n    </div>\n</template>\n\n<script>\n    export default {\n        props: {\n            placeholder: {\n                type: String, \n                default: 'search',\n                required: false\n            },\n            options: {\n                type: Array, \n                default: function() {\n                    return []\n                },\n                required: true\n            },\n            optionValue: {\n                type: String, \n                default: 'id',\n                required: true\n            },\n            optionText: {\n                type: String, \n                default: 'name',\n                required: true\n            },\n            value: {\n                type: Object,\n                default: function() {\n                    return null\n                },\n                required: false\n            }\n        },\n        data: function() {\n            return {\n                hasFocus: false,\n                search: null,\n                selectedOption: null,\n                selectedResult: 0\n            };\n        },\n        mounted() {\n            // Load selected option from prop\n            if(this.value) {\n                this.options.forEach(option => {\n                    if(option[this.optionValue] == this.value[this.optionValue]) {\n                        this.selectedOption = option;\n                    }\n                })\n            }\n            // Add onclick method to body to hide result list when component loses focus\n            window.addEventListener(\"click\", this.loseFocus)\n        },\n        destroyed() {\n            window.removeEventListener(\"click\", this.loseFocus)\n        },\n        computed: {\n            results: function() {\n                // Filter items on search text (if not empty, case insensitive) and when item isn't already selected (else return all items not selected)\n                return this.search ? this.options.filter(i => i[this.optionText].toLowerCase().indexOf(this.search.toLowerCase()) > -1) : this.options;\n            },\n            showResultList: function() {\n                return this.hasFocus && this.results.length > 0;\n            },\n            showPlaceholder: function() {\n                return !this.hasFocus && !this.selectedOption;\n            }\n        },\n        watch: {\n            hasFocus: function(hasFocus) {\n                // Clear the search box when component loses focus\n                window.removeEventListener(\"keydown\", this.stopScroll);\n                if(hasFocus) {\n                    window.addEventListener(\"keydown\", this.stopScroll);\n                    this.$refs.search.focus();\n                } else {\n                    this.search = null;\n                    this.selectedResult = 0;\n                    this.$refs.search.blur();\n                }\n            },\n            selectedOption: function() {\n                // Provide selected item to parent\n                this.$emit('input', this.selectedOption);\n            },\n            search: function() {\n                // Provide search text to parent (for ajax fetching, etc)\n                this.$emit('search', this.search);\n            }\n        },\n        methods: {\n            selectOption: function(option) {\n                this.selectedOption = option;\n                this.hasFocus = false;\n            },\n            removeOption: function(event) {\n                // Remove selected option if user hits backspace on empty search field\n                if(event.keyCode === 8 && (this.search == null || this.search == '')) {\n                    this.selectedOption = null;\n                    this.hasFocus = false;\n                }\n            },\n            moveToResults: function(event) {\n                // Move down to first result if user presses down arrow (from search field)\n                if(event.keyCode === 40) {\n                    if(this.$refs.result.length > 0) {\n                        this.$refs.resultList.children.item(0).focus();\n                    }\n                }\n            },\n            navigateResults: function(option, event) {\n                // Add option to selected items on enter key\n                if(event.keyCode === 13) {\n                    this.selectOption(option);\n                // Move up or down items in result list with up or down arrow keys\n                } else if(event.keyCode === 40 || event.keyCode === 38) {\n                    if(event.keyCode === 40) {\n                        this.selectedResult++;\n                    } else if(event.keyCode === 38) {\n                        this.selectedResult--;\n                    }\n                    let next = this.$refs.resultList.children.item(this.selectedResult);\n                    if(next) {\n                        next.focus();\n                    } else {\n                        this.selectedResult = 0;\n                        this.$refs.search.focus();\n                    }\n                }\n            },\n            highlight: function(value) {\n                // Highlights the part of each result that matches the search text\n                if(this.search) {\n                    let matchPos = value.toLowerCase().indexOf(this.search.toLowerCase());\n                    if(matchPos > -1) {\n                        let matchStr = value.substr(matchPos, this.search.length);\n                        value = value.replace(matchStr, '<span style=\"font-weight: bold; background-color: #efefef;\">'+matchStr+'</span>');\n                    }\n                }\n\n                return value;\n            },\n            stopScroll: function(event) {\n                if(event.keyCode === 40 || event.keyCode === 38) {\n                    event.preventDefault();\n                }\n            },\n            loseFocus: function(event) {\n                if(!event.target.classList.contains('vue-dynamic-select')) {\n                    this.hasFocus = false;\n                }\n            }\n        }\n    }\n</script>\n\n<style scoped>\n    .vue-dynamic-select {\n        border: 1px solid #ced4da; \n        position: relative;\n        padding: .375em .5em;\n        border-radius: .25em;\n        cursor: text;\n        display: block;\n    }\n    .vue-dynamic-select i.dropdown {\n        width: 0; \n        height: 0; \n        border-left: 4px solid transparent; \n        border-right: 4px solid transparent; \n        border-top: 4px solid; \n        float: right; \n        top: .75em; \n        opacity: .8; \n        cursor: pointer;\n    }\n    .vue-dynamic-select .placeholder {\n        display: inline-block;\n        color: #ccc;\n    }\n    .vue-dynamic-select .result-list {\n        border: 1px solid #ced4da; \n        margin: calc(.375em - 1px) calc(-.5em - 1px);\n        width: calc(100% + 2px);\n        min-width: calc(100% + 2px);\n        border-radius: 0 0 .25em .25em;\n        cursor: pointer;\n        position: absolute;\n        z-index: 10;\n        background-color: #fff;\n    }\n    .vue-dynamic-select .result-list .result {\n        padding: .375em .75em;\n        color: #333;\n    }\n    .vue-dynamic-select .result-list .result:hover, .vue-dynamic-select .result-list .result:focus {\n        background-color: #efefef;\n        outline: none;\n    }\n    .vue-dynamic-select .selected-option {\n        display: inline-block;\n    }\n    .vue-dynamic-select .search {\n        border: none;\n        width: 50px;\n    }\n    .vue-dynamic-select .search:focus {\n        outline: none;\n    }\n</style>\n"]}, media: undefined });
 
   };
   /* scoped */
-  var __vue_scope_id__ = "data-v-7db6c076";
+  var __vue_scope_id__ = "data-v-d8e8a08a";
   /* module identifier */
   var __vue_module_identifier__ = undefined;
   /* functional template */
