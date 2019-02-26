@@ -1,12 +1,12 @@
 <template>
     <div>
-        <div class="vue-dynamic-select" @focusin="hasFocus=true" @focusout="hasFocus=false" @click="$refs.search.focus()">
-            <div v-if="showPlaceholder" class="placeholder" v-text="placeholder" />
-            <div class="saved-option" v-text="savedOption[optionText]" v-if="savedOption && !typing" />
-            <input autocomplete="off" class="search" ref="search" v-model="search" @focus="typing=true" @blur="typing=false" @keyup="moveToResults" @keydown="removeOption" />
+        <div tabindex="0" @focusin="hasFocus=true" class="vue-dynamic-select">
+            <div v-if="showPlaceholder" class="placeholder" v-text="placeholder"></div>
+            <div class="selected-option" v-text="selectedOption[optionText]" v-if="selectedOption && !hasFocus" />
+            <input @focus="hasFocus=true" autocomplete="off" class="search" ref="search" v-model="search" @keyup="moveToResults" @keydown="removeOption" />
             <i class="dropdown" />
             <div v-if="showResultList" ref="resultList" class="result-list">
-                <div ref="result" class="result" tabindex="0" @focus="typing=true" @blur="typing=false" v-for="result in results" :key="result[optionValue]" v-html="highlight(result[optionText])" @click.stop="selectOption(result)" @keyup="navigateResults(result, $event)" />
+                <div tabindex="0" ref="result" class="result" v-for="result in results" :key="result[optionValue]" v-html="highlight(result[optionText])" @click="selectOption(result)" @keyup.prevent="navigateResults(result, $event)" />
             </div>
         </div>
     </div>
@@ -48,9 +48,8 @@
         data: function() {
             return {
                 hasFocus: false,
-                typing: false,
                 search: null,
-                savedOption: null,
+                selectedOption: null,
                 selectedResult: 0
             };
         },
@@ -59,10 +58,15 @@
             if(this.value) {
                 this.options.forEach(option => {
                     if(option[this.optionValue] == this.value[this.optionValue]) {
-                        this.savedOption = option;
+                        this.selectedOption = option;
                     }
                 })
             }
+            // Add onclick method to body to hide result list when component loses focus
+            window.addEventListener("click", this.loseFocus)
+        },
+        destroyed() {
+            window.removeEventListener("click", this.loseFocus)
         },
         computed: {
             results: function() {
@@ -73,20 +77,25 @@
                 return this.hasFocus && this.results.length > 0;
             },
             showPlaceholder: function() {
-                return !this.hasFocus && !this.savedOption;
+                return !this.hasFocus && !this.selectedOption;
             }
         },
         watch: {
-            hasFocus: function() {
+            hasFocus: function(hasFocus) {
                 // Clear the search box when component loses focus
-                if(!this.hasFocus) {
-                    this.typing = false;
+                window.removeEventListener("keydown", this.stopScroll);
+                if(hasFocus) {
+                    window.addEventListener("keydown", this.stopScroll);
+                    this.$refs.search.focus();
+                } else {
                     this.search = null;
+                    this.selectedResult = 0;
+                    this.$refs.search.blur();
                 }
             },
-            savedOption: function() {
-                // Provide selected items array to parent
-                this.$emit('input', this.savedOption);
+            selectedOption: function() {
+                // Provide selected item to parent
+                this.$emit('input', this.selectedOption);
             },
             search: function() {
                 // Provide search text to parent (for ajax fetching, etc)
@@ -95,16 +104,14 @@
         },
         methods: {
             selectOption: function(option) {
-                this.savedOption = option;
-                this.search = null;
-                this.$refs.search.blur();
+                this.selectedOption = option;
                 this.hasFocus = false;
             },
             removeOption: function(event) {
                 // Remove selected option if user hits backspace on empty search field
                 if(event.keyCode === 8 && (this.search == null || this.search == '')) {
-                    this.savedOption = null;
-                    this.$refs.search.blur();
+                    this.selectedOption = null;
+                    this.hasFocus = false;
                 }
             },
             moveToResults: function(event) {
@@ -146,6 +153,16 @@
                 }
 
                 return value;
+            },
+            stopScroll: function(event) {
+                if(event.keyCode === 40 || event.keyCode === 38) {
+                    event.preventDefault();
+                }
+            },
+            loseFocus: function(event) {
+                if(!event.target.classList.contains('vue-dynamic-select')) {
+                    this.hasFocus = false;
+                }
             }
         }
     }
@@ -194,7 +211,7 @@
         background-color: #efefef;
         outline: none;
     }
-    .vue-dynamic-select .saved-option {
+    .vue-dynamic-select .selected-option {
         display: inline-block;
     }
     .vue-dynamic-select .search {
