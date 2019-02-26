@@ -3,7 +3,7 @@ A VueJS plugin that provides a searchable and reactive select list component wit
 
 ![alt text](https://raw.githubusercontent.com/silasmontgomery/vue-dynamic-select/master/src/images/dynamic-select.png "vue-dynamic-select screenshot")
 
-[Online Demo](https://silasmontgomery.github.io/vue-dynamic-select)
+[View Online Demos Here](https://silasmontgomery.github.io)
 
 ### Installation
 ```
