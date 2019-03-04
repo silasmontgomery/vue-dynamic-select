@@ -71,7 +71,7 @@
         computed: {
             results: function() {
                 // Filter items on search text (if not empty, case insensitive) and when item isn't already selected (else return all items not selected)
-                return this.search ? this.options.filter(i => i[this.optionText].toLowerCase().indexOf(this.search.toLowerCase()) > -1) : this.options;
+                return this.search ? this.options.filter(i => String(i[this.optionText]).toLowerCase().indexOf(this.search.toLowerCase()) > -1) : this.options;
             },
             showResultList: function() {
                 return this.hasFocus && this.results.length > 0;
@@ -145,10 +145,10 @@
             highlight: function(value) {
                 // Highlights the part of each result that matches the search text
                 if(this.search) {
-                    let matchPos = value.toLowerCase().indexOf(this.search.toLowerCase());
+                    let matchPos = String(value).toLowerCase().indexOf(this.search.toLowerCase());
                     if(matchPos > -1) {
-                        let matchStr = value.substr(matchPos, this.search.length);
-                        value = value.replace(matchStr, '<span style="font-weight: bold; background-color: #efefef;">'+matchStr+'</span>');
+                        let matchStr = String(value).substr(matchPos, this.search.length);
+                        value = String(value).replace(matchStr, '<span style="font-weight: bold; background-color: #efefef;">'+matchStr+'</span>');
                     }
                 }
 
