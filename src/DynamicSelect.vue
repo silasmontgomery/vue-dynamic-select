@@ -93,6 +93,14 @@
                     this.$refs.search.blur();
                 }
             },
+            value: function() {
+                // Load selected option on prop value change
+                this.options.forEach(option => {
+                    if(option[this.optionValue] == this.value[this.optionValue]) {
+                        this.selectedOption = option;
+                    }
+                })
+            },
             selectedOption: function() {
                 // Provide selected item to parent
                 this.$emit('input', this.selectedOption);

@@ -1,6 +1,6 @@
 {
   "name": "vue-dynamic-select",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "A VueJS plugin that provides a searchable and reactive select list component with no dependencies.",
   "main": "dist/vue-dynamic-select.umd.js",
   "module": "dist/vue-dynamic-select.esm.js",
