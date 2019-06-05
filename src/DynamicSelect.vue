@@ -168,7 +168,7 @@
                 }
             },
             loseFocus: function(event) {
-                if(!event.target.classList.contains('vue-dynamic-select')) {
+                if(!this.$el.contains(event.target)) {
                     this.hasFocus = false;
                 }
             }
