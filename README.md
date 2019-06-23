@@ -52,3 +52,4 @@ NOTE: For more detailed usage see the examples folder.
 | Name   | Description                                                                 |
 | ------ | --------------------------------------------------------------------------- |
 | search | Triggered whenever search text changes. Value is the current search string. |
+| input  | Triggered whenever an option is selected.                                   |
