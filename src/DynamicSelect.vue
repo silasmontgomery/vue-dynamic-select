@@ -87,10 +87,8 @@
             },
             value: function() {
                 // Load selected option on prop value change
-                this.options.forEach(option => {
-                    if(this.value && option[this.optionValue] == this.value[this.optionValue]) {
-                        this.selectedOption = option;
-                    }
+                this.selectedOption = this.options.find( option => {
+                    return this.value && option[this.optionValue] == this.value[this.optionValue];
                 })
             },
             selectedOption: function() {
