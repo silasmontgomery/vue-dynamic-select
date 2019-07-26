@@ -110,6 +110,7 @@
                 if(event.keyCode === 8 && (this.search == null || this.search == '')) {
                     this.selectedOption = null;
                     this.hasFocus = false;
+                    event.preventDefault();
                 }
             },
             moveToResults: function(event) {
